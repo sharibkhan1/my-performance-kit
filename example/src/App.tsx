@@ -62,7 +62,12 @@ export default function App() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Widget Controls */}
-        <View style={[styles.controlsCard, { backgroundColor: theme.cardBg }]}>
+        <View
+          style={[
+            styles.controlsCard,
+            { backgroundColor: theme.backgroundColor },
+          ]}
+        >
           <Text style={[styles.controlsTitle, { color: theme.textColor }]}>
             Widget Controls
           </Text>
@@ -104,7 +109,7 @@ export default function App() {
                 {
                   backgroundColor: enabledWidgets.battery
                     ? theme.usedColor
-                    : theme.cardBg,
+                    : theme.backgroundColor,
                 },
               ]}
               onPress={() => toggleWidget('battery')}
@@ -129,7 +134,7 @@ export default function App() {
                 {
                   backgroundColor: enabledWidgets.storage
                     ? theme.usedColor
-                    : theme.cardBg,
+                    : theme.backgroundColor,
                 },
               ]}
               onPress={() => toggleWidget('storage')}
@@ -154,7 +159,7 @@ export default function App() {
                 {
                   backgroundColor: enabledWidgets.cpu
                     ? theme.usedColor
-                    : theme.cardBg,
+                    : theme.backgroundColor,
                 },
               ]}
               onPress={() => toggleWidget('cpu')}
@@ -179,7 +184,7 @@ export default function App() {
                 {
                   backgroundColor: enabledWidgets.ram
                     ? theme.usedColor
-                    : theme.cardBg,
+                    : theme.backgroundColor,
                 },
               ]}
               onPress={() => toggleWidget('ram')}
@@ -207,6 +212,14 @@ export default function App() {
           showStorage={enabledWidgets.storage}
           showCPU={enabledWidgets.cpu}
           showRAM={enabledWidgets.ram}
+          progressColors={{
+            battery: '#FF6B6B',
+            storageUsed: '#4ECDC4',
+            storageFree: '#45B7D1',
+            cpu: '#FFA726',
+            ramUsed: '#AB47BC',
+            ramFree: '#26C6DA',
+          }}
         />
       </ScrollView>
     </View>

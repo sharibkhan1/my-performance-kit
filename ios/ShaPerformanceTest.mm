@@ -61,7 +61,6 @@
 }
 
 - (NSDictionary *)getMemoryUsage {
-    // Get total physical memory
     uint64_t total_physical_memory = [[NSProcessInfo processInfo] physicalMemory];
     
     mach_port_t host_port = mach_host_self();
@@ -77,23 +76,14 @@
     }
     
     // CORRECT CALCULATION:
-    // Free memory = completely unused memory
     natural_t free_memory = vm_stat.free_count * pagesize;
-    
-    // Inactive memory = cached memory that can be quickly reclaimed
     natural_t inactive_memory = vm_stat.inactive_count * pagesize;
-    
-    // Available memory = free + inactive (what's actually available for new apps)
     natural_t available_memory = free_memory + inactive_memory;
-    
-    // Used memory = total - available (active + wired memory)
     natural_t used_memory = total_physical_memory - available_memory;
     
-    // Convert to GB
     double totalGB = total_physical_memory / (1024.0 * 1024.0 * 1024.0);
     double usedGB = used_memory / (1024.0 * 1024.0 * 1024.0);
     
-    // Calculate percentages
     double usedPercentage = (used_memory / (double)total_physical_memory) * 100.0;
     double freePercentage = (free_memory / (double)total_physical_memory) * 100.0;
     
@@ -129,7 +119,6 @@
     
     basic_info = (task_basic_info_t)tinfo;
     
-    // Get threads in the task
     kr = task_threads(mach_task_self(), &thread_list, &thread_count);
     if (kr != KERN_SUCCESS) {
         return @{@"error": @YES, @"message": @"Failed to get thread information"};
@@ -163,7 +152,6 @@
     
     kr = vm_deallocate(mach_task_self(), (vm_offset_t)thread_list, thread_count * sizeof(thread_t));
     
-    // For simulator, return mock data
     #if TARGET_IPHONE_SIMULATOR
         return @{
             @"cpuUsage": @(25.5), // Mock CPU usage for simulator

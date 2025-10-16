@@ -1,10 +1,5 @@
 import ShaPerformanceTest from './NativeShaPerformanceTest';
 export { default as SystemInfoDashboard } from './Comp/systemInfoDash';
-export { default as StorageCheck } from './Comp/systemInfoDash'; // alias if you want
-export { default as BatteryCheck } from './Comp/systemInfoDash'; // alias
-export { default as CPUCheck } from './Comp/systemInfoDash'; // alias
-export { default as RAMCheck } from './Comp/systemInfoDash'; // alias
-export type { SystemInfoDashboardProps } from './Comp/systemInfoDash';
 
 export function multiply(a: number, b: number): number {
   return ShaPerformanceTest.multiply(a, b);

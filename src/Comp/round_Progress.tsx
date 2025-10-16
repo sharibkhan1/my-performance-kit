@@ -60,17 +60,17 @@ interface CircularProgressProps {
   color?: string;
   backgroundColor?: string;
   textColor?: string;
-  centerText?: string; // NEW PROP
+  centerText?: string;
 }
 
 const CircularProgress: React.FC<CircularProgressProps> = ({
   percent,
   size = 120,
   strokeWidth = 10,
-  color = '#007AFF', // iOS blue
-  backgroundColor = '#E5E5EA', // iOS light gray
+  color = '#007AFF',
+  backgroundColor = '#E5E5EA',
   textColor = '#000',
-  centerText, // NEW PROP
+  centerText,
 }) => {
   const firstProgressLayerStyle: ViewStyle =
     percent > 50 ? propStyle(50, -135) : propStyle(percent, -135);

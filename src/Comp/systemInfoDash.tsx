@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Text,
   View,
@@ -21,7 +21,22 @@ export interface SystemInfoDashboardProps {
   showStorage?: boolean;
   showCPU?: boolean;
   showRAM?: boolean;
-  customTheme?: any;
+
+  refreshIntervals?: {
+    battery?: number;
+    storage?: number;
+    cpu?: number;
+    ram?: number;
+  };
+
+  progressColors?: {
+    battery?: string;
+    storageUsed?: string;
+    storageFree?: string;
+    cpu?: string;
+    ramUsed?: string;
+    ramFree?: string;
+  };
 }
 
 const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
@@ -30,35 +45,90 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
   showStorage = false,
   showCPU = false,
   showRAM = false,
-  customTheme,
+  refreshIntervals = {},
+  progressColors = {},
 }) => {
-  const currentTheme =
-    customTheme || (theme === 'light' ? lightTheme : darkTheme);
+  const currentTheme = theme === 'light' ? lightTheme : darkTheme;
   const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const [storageInfo, setStorageInfo] = useState<any>(null);
   const [memoryInfo, setMemoryInfo] = useState<any>(null);
   const [cpuInfo, setCpuInfo] = useState<any>(null);
   const [showUsedStorage, setShowUsedStorage] = useState(true);
   const [showUsedRAM, setShowUsedRAM] = useState(true);
+  const initialLoadRef = useRef(false);
+
+  const intervals = useMemo(() => {
+    const defaultIntervals = {
+      battery: 30000, // 30 seconds
+      storage: 10 * 60 * 1000, // 10 minutes
+      cpu: 2000, // 2 seconds
+      ram: 5000, // 5 seconds
+    };
+
+    return {
+      ...defaultIntervals,
+      ...refreshIntervals,
+    };
+  }, [refreshIntervals]);
+
+  const getProgressColor = useMemo(() => {
+    return (type: keyof typeof progressColors, defaultColor: string) => {
+      return progressColors[type] || defaultColor;
+    };
+  }, [progressColors]);
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = () => {
-    try {
-      const allInfo = getAllStorageInfo();
-      const getCurrentBatteryLevel = getBatteryLevel();
-      const memory = getMemoryUsage();
-      const cpu = getCPUUsage();
-      setBatteryLevel(getCurrentBatteryLevel);
-      setStorageInfo(allInfo);
-      setMemoryInfo(memory);
-      setCpuInfo(cpu);
-    } catch (error) {
-      console.error('Error loading data:', error);
+    // Only load data once on initial mount
+    if (!initialLoadRef.current) {
+      try {
+        const allInfo = getAllStorageInfo();
+        const getCurrentBatteryLevel = getBatteryLevel();
+        const memory = getMemoryUsage();
+        const cpu = getCPUUsage();
+        setBatteryLevel(getCurrentBatteryLevel);
+        setStorageInfo(allInfo);
+        setMemoryInfo(memory);
+        setCpuInfo(cpu);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+      initialLoadRef.current = true;
     }
-  };
+
+    const intervalsToClear: NodeJS.Timeout[] = [];
+
+    if (showCPU) {
+      const cpuInterval = setInterval(() => {
+        setCpuInfo(getCPUUsage());
+      }, intervals.cpu);
+      intervalsToClear.push(cpuInterval);
+    }
+
+    if (showRAM) {
+      const memoryInterval = setInterval(() => {
+        setMemoryInfo(getMemoryUsage());
+      }, intervals.ram);
+      intervalsToClear.push(memoryInterval);
+    }
+
+    if (showBattery) {
+      const batteryInterval = setInterval(() => {
+        setBatteryLevel(getBatteryLevel());
+      }, intervals.battery);
+      intervalsToClear.push(batteryInterval);
+    }
+
+    if (showStorage) {
+      const storageInterval = setInterval(() => {
+        setStorageInfo(getAllStorageInfo());
+      }, intervals.storage);
+      intervalsToClear.push(storageInterval);
+    }
+
+    return () => {
+      intervalsToClear.forEach((interval) => clearInterval(interval));
+    };
+  }, [showBattery, showStorage, showCPU, showRAM, intervals]);
 
   if (batteryLevel === null || storageInfo === null) {
     return (
@@ -98,7 +168,9 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
             size={100}
             strokeWidth={10}
             color={
-              showUsedStorage ? currentTheme.usedColor : currentTheme.freeColor
+              showUsedStorage
+                ? getProgressColor('storageUsed', currentTheme.usedColor)
+                : getProgressColor('storageFree', currentTheme.freeColor)
             }
             backgroundColor={currentTheme.backgroundColor}
             textColor={currentTheme.textColor}
@@ -111,7 +183,7 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
                   styles.statText,
                   {
                     color: showUsedStorage
-                      ? currentTheme.usedColor
+                      ? getProgressColor('storageUsed', currentTheme.usedColor)
                       : currentTheme.textColor,
                   },
                 ]}
@@ -125,7 +197,7 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
                   styles.statText,
                   {
                     color: !showUsedStorage
-                      ? currentTheme.freeColor
+                      ? getProgressColor('storageFree', currentTheme.freeColor)
                       : currentTheme.textColor,
                   },
                 ]}
@@ -143,13 +215,13 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
             percent={batteryLevel}
             size={100}
             strokeWidth={10}
-            color={currentTheme.batteryColor}
+            color={getProgressColor('battery', currentTheme.batteryColor)}
             backgroundColor={currentTheme.backgroundColor}
             textColor={currentTheme.textColor}
             centerText={`${batteryLevel.toFixed(0)}%`}
           />
           <Text style={[styles.centerLabel, { color: currentTheme.textColor }]}>
-            Charge
+            Charge level
           </Text>
         </WidgetCard>
       )}
@@ -160,7 +232,7 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
             percent={cpuInfo.cpuUsage}
             size={100}
             strokeWidth={10}
-            color={currentTheme.cpuColor}
+            color={getProgressColor('cpu', currentTheme.cpuColor)}
             backgroundColor={currentTheme.backgroundColor}
             textColor={currentTheme.textColor}
             centerText={`${cpuInfo.cpuUsage.toFixed(0)}%`}
@@ -182,7 +254,9 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
             size={100}
             strokeWidth={10}
             color={
-              showUsedRAM ? currentTheme.ramUsedColor : currentTheme.freeColor
+              showUsedRAM
+                ? getProgressColor('ramUsed', currentTheme.ramUsedColor)
+                : getProgressColor('ramFree', currentTheme.freeColor)
             }
             backgroundColor={currentTheme.backgroundColor}
             textColor={currentTheme.textColor}
@@ -195,7 +269,7 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
                   styles.statText,
                   {
                     color: showUsedRAM
-                      ? currentTheme.ramUsedColor
+                      ? getProgressColor('ramUsed', currentTheme.ramUsedColor)
                       : currentTheme.textColor,
                   },
                 ]}
@@ -209,7 +283,7 @@ const SystemInfoDashboard: React.FC<SystemInfoDashboardProps> = ({
                   styles.statText,
                   {
                     color: !showUsedRAM
-                      ? currentTheme.freeColor
+                      ? getProgressColor('ramFree', currentTheme.freeColor)
                       : currentTheme.textColor,
                   },
                 ]}
