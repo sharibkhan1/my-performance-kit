@@ -7,6 +7,16 @@ export interface Spec extends TurboModule {
     freeDiskSpaceInPer: number;
     usedDiskSpaceInPer: number;
   };
+  getBatteryLevel(): number;
+  getMemoryUsage(): {
+    totalMemoryGB: number;
+    usedMemoryPercentage: number;
+    freeMemoryPercentage: number;
+    usedMemoryGB: number;
+  };
+  getCPUUsage(): {
+    cpuUsage: number;
+  };
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('ShaPerformanceTest');
